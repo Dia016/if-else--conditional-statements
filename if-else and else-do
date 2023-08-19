@@ -1,0 +1,210 @@
+
+Activity 4.07                                          *;
+*    1) Add the ELSE keyword to test conditions           *;
+*       sequentially until a true condition is met.       *;
+*    2) Change the final IF-THEN statement to an ELSE     *;
+*       statement.                                        *;
+*    3) How many storms are in PressureGroup 1? 
+
+
+
+data storm_cat;
+	set pg1.storm_summary;
+	keep Name Basin MinPressure StartDate PressureGroup;
+	*add ELSE keyword and remove final condition;
+	if MinPressure=. then PressureGroup=.;
+	if MinPressure<=920 then PressureGroup=1;
+	if MinPressure>920 then PressureGroup=0;
+run;
+proc freq data=storm_cat;
+	tables PressureGroup;
+run;
+***********************************************************************;
+
+data storm_cat;
+    set pg1.storm_summary;
+    keep Name Basin MinPressure StartDate PressureGroup;
+    *add ELSE keyword and remove final condition;
+    if MinPressure=. then PressureGroup=.;
+    else if MinPressure<=920 then PressureGroup=1;
+    else PressureGroup=0;
+run;
+
+/* Alternativly */
+data storm_cat;
+    set pg1.storm_summary;
+    keep Name Basin MinPressure StartDate PressureGroup;
+    
+    if MinPressure=. then PressureGroup=.;
+    else if MinPressure<=920 then PressureGroup=1;
+    else PressureGroup=0;
+run;
+proc sql;
+    select count(*) as Num_Storms_in_Group1
+    from storm_cat
+    where PressureGroup = 1;
+quit;
+
+*************************************************************************;
+
+data cars2;
+set sashelp.cars;
+if MSRP<20000 then Cost_Group=1;
+if MSRP>20000 then Cost_Group=2;
+else if MSRP<60000 then Cost_Group=3;
+else Cost_Group=4;
+keep Make Model Type MSRP Cost_Group;
+run;
+
+********************************************************************;
+data cars2;
+set sashelp.cars;
+if MPG_City>26 and MPG_Highway>30 then Efficiency=1;
+else if MPG_City>26 and MPG_Highway>25 then Efficiency=2;
+else Efficiency=3;
+keep Make Model MPG_City MPG_Highway Efficiency;
+run;
+********************************************************************;
+data cars2;
+set sashelp.cars;
+if MSRP<60000 then CarType="Basic";
+else CarType="Luxury";
+keep Make Model MSRP CarType;
+run;
+
+*****************************************************************;
+
+/*  You can see in the output table that LUXURY is truncated because it has six characters. One way to avoid this problem is to explicitly define a character column in the DATA step with a LENGTH statement. */
+ data cars2;
+set sashelp.cars;
+length CarType$6;
+if MSRP<60000 then CarType="Basic";
+else CarType="Luxury";
+keep Make Model MSRP CarType;
+run;
+
+
+***********************************************************;
+*  Activity 4.08                                          *;
+*    1) Run the program and examine the results. Why is   *;
+*       Ocean truncated? What value is assigned when      *;
+*       Basin='na'?                                       *;
+*    2) Modify the program to add a LENGTH statement to   *;
+*       declare the name, type, and length of Ocean       *;
+*       before the column is created.                     *;
+*    3) Add an assignment statement after the KEEP        *;
+*       statement to convert Basin to uppercase. Run the  *;
+*       program.                                          *;
+*    4) Move the LENGTH statement to the end of the DATA  *;
+*       step. Run the program. Does it matter where the   *;
+*       LENGTH statement is in the DATA step?             *;
+***********************************************************;
+*  Syntax                                                 *;
+*       LENGTH char-column $ length;                      *;
+***********************************************************;
+
+data storm_summary2;
+	set pg1.storm_summary;
+	length Ocean$10;
+	Basin=upcase(Basin);
+	*Add a LENGTH statement;
+	keep Basin Season Name MaxWindMPH Ocean;
+	*Add assignment statement;
+	OceanCode=substr(Basin,2,1);
+	if OceanCode="I" then Ocean="Indian";
+	else if OceanCode="A" then Ocean="Atlantic";
+	else Ocean="Pacific";
+run;
+
+***********************************************************;
+*  Activity 4.09                                          *;
+*    Run the program. Why does the program fail?          *;
+***********************************************************;
+
+data front rear;
+    set sashelp.cars;
+    if DriveTrain="Front" then do;
+        DriveTrain="FWD";
+        output front;
+        end;
+    else if DriveTrain='Rear' then do;
+        DriveTrain="RWD";
+        output rear;
+        end;
+run;
+
+***************************************************************;
+data Indian Atlantic Pacific;
+	set pg1.storm_summary;
+	length Ocean$10;
+	Basin=upcase(Basin);
+	*Add a LENGTH statement;
+	keep Basin Season Name MaxWindMPH Ocean;
+	*Add assignment statement;
+	OceanCode=substr(Basin,2,1);
+	if OceanCode="I" then do;
+	Ocean="Indian";
+	output Indian;
+	end;
+	else if OceanCode="A" then do;
+	Ocean="Atlantic";
+	output Atlantic;
+	end;
+	else do;
+	Ocean="Pacific";
+	output Pacific;
+	end;
+run;
+
+*******************************************************************;
+***********************************************************;
+*  LESSON 4, PRACTICE 7                                   *;
+*    a) Submit the program and view the generated output. *;
+*    b) In the DATA step, use IF-THEN/ELSE statements to  *;
+*       create a new column, ParkType, based on the value *;
+*       of Type.                                          *;
+*       NM -> Monument                                    *;
+*       NP -> Park                                        *;
+*       NPRE, PRE, or PRESERVE -> Preserve                *;
+*       NS -> Seashore                                    *;
+*       RVR or RIVERWAYS -> River                         *;
+*    c) Modify the PROC FREQ step to generate a frequency *;
+*       report for ParkType.                              *;
+***********************************************************;
+
+data park_type;
+	set pg1.np_summary;
+	*Add IF-THEN-ELSE statements;
+	length ParkType$8;
+	if Type="NM" then ParkType="Monument";
+	else if Type="NP" then ParkType="Park";
+	else if Type in ("NPRE" "PRE" "PRESERVE") then ParkType="Preserve";
+	else if Type="NS" then ParkType="Seashore";
+	else if Type in("RVR" "RIVERWAYS") then ParkType="River";
+	run;
+
+
+proc freq data=park_type;
+	tables ParkType;
+run;
+
+*************************************************************;
+
+data parks monuments;
+set pg1.np_summary;
+where type in ('NM', 'NP');
+Campers=sum(OtherCamping, TentCampers, RVCampers, BackcountryCampers);
+format Campers comma17.;
+length ParkType $ 8;
+if type='NP' then do;
+ParkType='Park';
+output parks;
+end;
+else do;
+ParkType='Monument';
+output monuments;
+end;
+keep Reg ParkName DayVisits OtherLodging Campers ParkType;
+run;
+
+***********************************************************;
